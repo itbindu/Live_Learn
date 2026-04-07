@@ -1,3 +1,4 @@
+// src/components/Student/TakeQuiz.js
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/config';
@@ -13,8 +14,10 @@ const TakeQuiz = () => {
   const [submissionResult, setSubmissionResult] = useState(null);
   const [showReview, setShowReview] = useState(false);
   const [checking, setChecking] = useState(true);
+  const [error, setError] = useState('');
   const timerRef = useRef(null);
 
+  // Check if already submitted
   useEffect(() => {
     let isMounted = true;
     const checkSubmission = async () => {
@@ -24,7 +27,10 @@ const TakeQuiz = () => {
           navigate('/student/login');
           return;
         }
+        console.log('Checking submission for quiz:', quizId);
         const res = await api.get(`/api/quizzes/check-submission/${quizId}`);
+        console.log('Check submission response:', res.data);
+        
         if (isMounted) {
           if (res.data.submitted) {
             alert('You have already taken this quiz.');
@@ -35,6 +41,7 @@ const TakeQuiz = () => {
         }
       } catch (err) {
         console.error('Check submission error:', err);
+        setError('Failed to verify quiz access. Please try again.');
         if (isMounted) setChecking(false);
       }
     };
@@ -42,20 +49,23 @@ const TakeQuiz = () => {
     return () => { isMounted = false; };
   }, [quizId, navigate]);
 
+  // Fetch quiz data
   useEffect(() => {
     if (checking) return;
     
     const fetchQuiz = async () => {
       try {
+        console.log('Fetching quiz data for ID:', quizId);
         const res = await api.get(`/api/quizzes/${quizId}`);
+        console.log('Quiz data response:', res.data);
         
-        const quizData = res.data.quiz;
+        const quizData = res.data.quiz || res.data;
         setQuiz(quizData);
 
         const safeTimeLimit = quizData.timeLimit > 0 ? quizData.timeLimit : 60;
         setTimeLeft(safeTimeLimit * 60);
         
-        // Initialize answers array - for MCQ questions, store empty string initially
+        // Initialize answers array
         setAnswers(new Array(quizData.questions.length).fill(''));
       } catch (err) {
         console.error('Fetch quiz error:', err);
@@ -76,14 +86,31 @@ const TakeQuiz = () => {
     fetchQuiz();
   }, [checking, quizId, navigate]);
 
+  // Timer effect
   useEffect(() => {
     if (!quiz || submissionResult || timeLeft === null || timeLeft <= 0) return;
+    
     timerRef.current = setInterval(() => {
-      setTimeLeft((prev) => prev - 1);
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current);
+          if (!submissionResult && !isSubmitting) {
+            handleSubmit();
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
-    return () => clearInterval(timerRef.current);
+    
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
   }, [timeLeft, quiz, submissionResult]);
 
+  // Auto-submit when time reaches 0
   useEffect(() => {
     if (timeLeft === 0 && !submissionResult && !isSubmitting) {
       handleSubmit();
@@ -93,10 +120,8 @@ const TakeQuiz = () => {
   const handleAnswerChange = (questionIndex, value, optionLetter = null) => {
     const updated = [...answers];
     if (optionLetter !== null) {
-      // For MCQ, store the letter (A, B, C, D)
       updated[questionIndex] = optionLetter;
     } else {
-      // For blank, store the text answer
       updated[questionIndex] = value;
     }
     setAnswers(updated);
@@ -104,24 +129,57 @@ const TakeQuiz = () => {
 
   const handleSubmit = async () => {
     if (isSubmitting || submissionResult) return;
+    
+    // Confirm submission
+    const confirmSubmit = window.confirm('Are you sure you want to submit your quiz?');
+    if (!confirmSubmit) return;
+    
     setIsSubmitting(true);
-    clearInterval(timerRef.current);
+    
+    // Clear timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
 
     try {
-      const res = await api.post(`/api/quizzes/submit/${quizId}`, { answers });
-
+      console.log('Submitting quiz...');
+      console.log('Quiz ID:', quizId);
+      console.log('Answers:', answers);
+      
+      const res = await api.post(`/api/quizzes/submit/${quizId}`, { 
+        answers: answers,
+        proctoringData: {} // Empty proctoring data for now
+      });
+      
+      console.log('Submit response:', res.data);
+      
       setSubmissionResult({
         score: res.data.score,
         percentage: res.data.percentage,
         correctAnswers: res.data.correctAnswers,
       });
+      
+      alert(`Quiz submitted successfully! Your score: ${res.data.score}/${res.data.totalQuestions}`);
+      
     } catch (err) {
       console.error('Submit failed:', err);
+      console.error('Error details:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status
+      });
+      
       if (err.response?.status === 400 && err.response?.data?.message?.includes('already submitted')) {
         alert('You have already submitted this quiz.');
         navigate('/student/quizzes');
+      } else if (err.response?.status === 401) {
+        alert('Session expired. Please login again.');
+        navigate('/student/login');
       } else {
-        alert('Could not submit quiz: ' + (err.response?.data?.message || 'Server error'));
+        alert('Could not submit quiz: ' + (err.response?.data?.message || 'Server error. Please try again.'));
+        // Don't clear isSubmitting so they can try again
+        setIsSubmitting(false);
+        return;
       }
     } finally {
       setIsSubmitting(false);
@@ -137,6 +195,17 @@ const TakeQuiz = () => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="take-quiz-container loading">
+        <p style={{ color: 'red' }}>{error}</p>
+        <button onClick={() => navigate('/student/quizzes')} className="back-btn">
+          Back to Quizzes
+        </button>
+      </div>
+    );
+  }
+
   if (!quiz) {
     return (
       <div className="take-quiz-container loading">
@@ -145,6 +214,7 @@ const TakeQuiz = () => {
     );
   }
 
+  // Quiz taking view
   if (!submissionResult) {
     if (timeLeft === null) {
       return (
@@ -154,12 +224,14 @@ const TakeQuiz = () => {
       );
     }
 
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+
     return (
       <div className="take-quiz-container">
         <h2>{quiz.title}</h2>
         <div className="timer">
-          ⏱️ Time left: {Math.floor(timeLeft / 60)}:
-          {(timeLeft % 60).toString().padStart(2, '0')}
+          ⏱️ Time left: {minutes}:{seconds.toString().padStart(2, '0')}
         </div>
 
         <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
@@ -203,6 +275,7 @@ const TakeQuiz = () => {
     );
   }
 
+  // Result view
   return (
     <div className="quiz-result-container">
       <h2>✅ Quiz Submitted!</h2>
@@ -225,7 +298,6 @@ const TakeQuiz = () => {
           {quiz.questions.map((q, i) => {
             let displayAnswer = answers[i] || '(not answered)';
             
-            // For MCQ questions, display the actual option text in review
             if (q.type === 'mcq' && answers[i]) {
               const optionIndex = answers[i].charCodeAt(0) - 65;
               if (q.options[optionIndex]) {
