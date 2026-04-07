@@ -148,6 +148,7 @@ router.get('/teachers-by-subject', authenticateToken, async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
+
 // ==================== GET MEETINGS (FIXED) ====================
 // Now shows BOTH active AND ended meetings for students
 router.get('/meetings', authenticateToken, async (req, res) => {
@@ -312,4 +313,5 @@ router.get('/attendance', authenticateToken, async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch attendance' });
   }
 });
+
 module.exports = router;

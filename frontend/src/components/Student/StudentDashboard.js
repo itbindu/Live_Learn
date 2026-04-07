@@ -12,7 +12,6 @@ const StudentDashboard = () => {
   const [subjectTeachers, setSubjectTeachers] = useState({});
   const navigate = useNavigate();
 
-  // Subjects available (matching teacher subjects)
   const subjectsList = ["Java", "C", "Python", "C++"];
 
   useEffect(() => {
@@ -36,6 +35,7 @@ const StudentDashboard = () => {
       const response = await api.get("/api/students/teachers-by-subject");
       if (response.data.success) {
         setSubjectTeachers(response.data.teachers);
+        console.log("Subject teachers loaded:", response.data.teachers);
       }
     } catch (error) {
       console.error("Error fetching teachers:", error);
@@ -74,10 +74,10 @@ const StudentDashboard = () => {
                 onClick={() => setSelectedSubject(subject)}
               >
                 <div className="subject-icon">
-                  {subject === "Java" }
-                  {subject === "C" }
-                  {subject === "Python" }
-                  {subject === "C++" }
+                  {subject === "Java" && "☕"}
+                  {subject === "C" && "⚙️"}
+                  {subject === "Python" && "🐍"}
+                  {subject === "C++" && "➕➕"}
                 </div>
                 <h3>{subject}</h3>
                 <p className="teacher-name">
@@ -92,9 +92,12 @@ const StudentDashboard = () => {
     );
   }
 
-  // Dashboard 2 - Subject Dashboard (shows ONLY content for selected subject)
+  // Dashboard 2 - Subject Dashboard
   const currentTeacher = subjectTeachers[selectedSubject];
   const teacherId = currentTeacher?.id;
+  const teacherName = currentTeacher ? `${currentTeacher.firstName} ${currentTeacher.lastName}` : null;
+
+  console.log(`Selected Subject: ${selectedSubject}, Teacher ID: ${teacherId}, Teacher Name: ${teacherName}`);
 
   return (
     <div className="student-dashboard subject-dashboard">
@@ -108,7 +111,6 @@ const StudentDashboard = () => {
         <button className="logout-btn" onClick={handleLogout}>Logout</button>
       </header>
 
-      {/* Teacher Info for this subject */}
       {currentTeacher && (
         <div className="teacher-info-card">
           <div className="teacher-avatar">
@@ -127,7 +129,7 @@ const StudentDashboard = () => {
       <div className="actions-grid">
         <div 
           className="action-card" 
-          onClick={() => navigate("/meeting-links", { state: { subject: selectedSubject, teacherId: teacherId } })}
+          onClick={() => navigate("/meeting-links", { state: { subject: selectedSubject, teacherId: teacherId, teacherName: teacherName } })}
         >
           <Video size={42} />
           <p>Meeting Links</p>
@@ -136,7 +138,7 @@ const StudentDashboard = () => {
         
         <div 
           className="action-card" 
-          onClick={() => navigate("/student/quizzes", { state: { subject: selectedSubject, teacherId: teacherId } })}
+          onClick={() => navigate("/student/quizzes", { state: { subject: selectedSubject, teacherId: teacherId, teacherName: teacherName } })}
         >
           <FileText size={42} />
           <p>Quizzes</p>
@@ -145,7 +147,7 @@ const StudentDashboard = () => {
         
         <div 
           className="action-card" 
-          onClick={() => navigate("/student/leaderboard", { state: { subject: selectedSubject, teacherId: teacherId } })}
+          onClick={() => navigate("/student/leaderboard", { state: { subject: selectedSubject, teacherId: teacherId, teacherName: teacherName } })}
         >
           <Trophy size={42} />
           <p>Leaderboard</p>
@@ -154,7 +156,7 @@ const StudentDashboard = () => {
         
         <div 
           className="action-card" 
-          onClick={() => navigate("/student/attendance", { state: { subject: selectedSubject, teacherId: teacherId } })}
+          onClick={() => navigate("/student/attendance", { state: { subject: selectedSubject, teacherId: teacherId, teacherName: teacherName } })}
         >
           <Calendar size={42} />
           <p>Attendance</p>
@@ -163,7 +165,7 @@ const StudentDashboard = () => {
         
         <div 
           className="action-card" 
-          onClick={() => navigate("/student/lms", { state: { subject: selectedSubject, teacherId: teacherId } })}
+          onClick={() => navigate("/student/lms", { state: { subject: selectedSubject, teacherId: teacherId, teacherName: teacherName } })}
         >
           <BookOpen size={42} />
           <p>Learning Materials</p>

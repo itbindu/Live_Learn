@@ -17,6 +17,77 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// ==================== NOTIFICATION ENDPOINTS ====================
+
+// GET NOTIFICATIONS FOR STUDENT
+router.get('/notifications', authenticateToken, async (req, res) => {
+  try {
+    const student = await Student.findById(req.user.id).select('notifications');
+    
+    if (!student) {
+      return res.status(404).json({ success: false, message: 'Student not found' });
+    }
+    
+    const notifications = (student.notifications || []).sort((a, b) => 
+      new Date(b.createdAt) - new Date(a.createdAt)
+    );
+    
+    res.status(200).json({ 
+      success: true, 
+      notifications,
+      unreadCount: notifications.filter(n => !n.read).length
+    });
+  } catch (error) {
+    console.error('Fetch notifications error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch notifications' });
+  }
+});
+
+// MARK NOTIFICATION AS READ
+router.put('/notifications/:notificationId/read', authenticateToken, async (req, res) => {
+  try {
+    const student = await Student.findById(req.user.id);
+    
+    if (!student) {
+      return res.status(404).json({ success: false, message: 'Student not found' });
+    }
+    
+    const notification = student.notifications.id(req.params.notificationId);
+    if (notification) {
+      notification.read = true;
+      await student.save();
+    }
+    
+    res.status(200).json({ success: true, message: 'Notification marked as read' });
+  } catch (error) {
+    console.error('Mark notification read error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update notification' });
+  }
+});
+
+// MARK ALL NOTIFICATIONS AS READ
+router.put('/notifications/read-all', authenticateToken, async (req, res) => {
+  try {
+    const student = await Student.findById(req.user.id);
+    
+    if (!student) {
+      return res.status(404).json({ success: false, message: 'Student not found' });
+    }
+    
+    student.notifications.forEach(notification => {
+      notification.read = true;
+    });
+    await student.save();
+    
+    res.status(200).json({ success: true, message: 'All notifications marked as read' });
+  } catch (error) {
+    console.error('Mark all notifications read error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update notifications' });
+  }
+});
+
+// ==================== QUIZ ENDPOINTS ====================
+
 // CREATE QUIZ (Teacher only)
 router.post('/create', authenticateToken, async (req, res) => {
   const { title, questions, timeLimit } = req.body;
@@ -42,7 +113,10 @@ router.post('/create', authenticateToken, async (req, res) => {
     const assignedStudents = teacher.students || [];
     const frontendUrl = getFrontendUrl();
 
-    const emailPromises = assignedStudents.map(async (student) => {
+    let emailSuccessCount = 0;
+    let emailFailCount = 0;
+
+    for (const student of assignedStudents) {
       try {
         await transporter.sendMail({
           from: process.env.EMAIL_USER,
@@ -50,26 +124,34 @@ router.post('/create', authenticateToken, async (req, res) => {
           subject: `📝 New Proctored Quiz Available: ${title}`,
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2 style="color: #3b82f6;">New Proctored Quiz Created!</h2>
-              <p>Hello ${student.firstName},</p>
-              <p>Your teacher has created a new proctored quiz:</p>
-              <div style="background: #f8fafc; padding: 20px; border-radius: 10px; margin: 20px 0;">
-                <h3 style="color: #1e293b; margin: 0;">${title}</h3>
-                <p style="color: #64748b;">⏱️ Time Limit: ${timeLimit} minutes</p>
-                <p style="color: #64748b;">📋 Questions: ${questions.length}</p>
-                <p style="color: #dc2626; font-weight: bold;">⚠️ This is a proctored quiz with camera monitoring</p>
+              <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+                <h1 style="color: white; margin: 0;">📝 New Quiz!</h1>
               </div>
-              <p>Log in to your student dashboard to take the quiz.</p>
-              <a href="${frontendUrl}/student/quizzes" 
-                 style="display: inline-block; background: #3b82f6; color: white; padding: 12px 24px; 
-                        text-decoration: none; border-radius: 8px; margin-top: 20px;">
-                Take Quiz Now
-              </a>
+              <div style="background: white; padding: 30px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 10px 10px;">
+                <p>Hello <strong>${student.firstName} ${student.lastName}</strong>,</p>
+                <p>Your teacher <strong>${teacher.firstName} ${teacher.lastName}</strong> has created a new proctored quiz.</p>
+                <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                  <h3 style="margin-top: 0;">Quiz Details:</h3>
+                  <table style="width: 100%;">
+                    <tr><td style="padding: 5px 0;"><strong>Title:</strong></td><td>${title}</td></tr>
+                    <tr><td style="padding: 5px 0;"><strong>Time Limit:</strong></td><td>${timeLimit} minutes</td></tr>
+                    <tr><td style="padding: 5px 0;"><strong>Questions:</strong></td><td>${questions.length}</td></tr>
+                  </table>
+                </div>
+                <div style="text-align: center; margin: 30px 0;">
+                  <a href="${frontendUrl}/student/quizzes" 
+                     style="background: #3b82f6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                    Take Quiz Now →
+                  </a>
+                </div>
+              </div>
             </div>
           `,
         });
+        emailSuccessCount++;
       } catch (emailErr) {
-        console.error('Email sending failed:', emailErr);
+        console.error(`Email sending failed for ${student.email}:`, emailErr);
+        emailFailCount++;
       }
 
       student.notifications = student.notifications || [];
@@ -81,14 +163,17 @@ router.post('/create', authenticateToken, async (req, res) => {
         link: `/proctored-quiz/${quiz._id}`
       });
       await student.save();
-    });
-
-    await Promise.all(emailPromises);
+    }
 
     res.status(201).json({ 
       success: true, 
-      message: 'Quiz created successfully', 
-      quiz 
+      message: `Quiz created successfully! Notified ${emailSuccessCount} students via email.`,
+      quiz,
+      notificationStats: {
+        emailsSent: emailSuccessCount,
+        emailsFailed: emailFailCount,
+        inAppNotifications: assignedStudents.length
+      }
     });
   } catch (error) {
     console.error('Create quiz error:', error);
@@ -96,7 +181,85 @@ router.post('/create', authenticateToken, async (req, res) => {
   }
 });
 
-// LIST QUIZZES FOR STUDENT (with submitted flag)
+// ==================== IMPORTANT: NEW ENDPOINT FOR TEACHER-SPECIFIC QUIZZES ====================
+// THIS MUST COME BEFORE THE /list and /:id routes to avoid conflicts
+
+// GET QUIZZES BY SPECIFIC TEACHER (for subject-specific view)
+router.get('/teacher/:teacherId', authenticateToken, async (req, res) => {
+  try {
+    console.log('=== TEACHER QUIZZES ENDPOINT CALLED ===');
+    console.log('Teacher ID param:', req.params.teacherId);
+    console.log('Student ID from token:', req.user.id);
+    
+    const student = await Student.findById(req.user.id).populate('teachers');
+    
+    if (!student) {
+      console.log('Student not found');
+      return res.status(404).json({ success: false, message: 'Student not found' });
+    }
+    
+    console.log('Student teachers:', student.teachers.map(t => ({ id: t._id.toString(), name: t.firstName, subject: t.subject })));
+    
+    // Verify this teacher is assigned to the student
+    const teacherIdParam = req.params.teacherId;
+    const isAssigned = student.teachers.some(t => t._id.toString() === teacherIdParam);
+    
+    console.log('Is teacher assigned to student?', isAssigned);
+    
+    if (!isAssigned) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Not authorized to view these quizzes. This teacher is not assigned to you.' 
+      });
+    }
+    
+    const teacher = await Teacher.findById(teacherIdParam).select('firstName lastName subject');
+    
+    if (!teacher) {
+      console.log('Teacher not found');
+      return res.status(404).json({ success: false, message: 'Teacher not found' });
+    }
+    
+    console.log('Teacher found:', { name: `${teacher.firstName} ${teacher.lastName}`, subject: teacher.subject });
+    
+    // Get quizzes for this specific teacher
+    const quizzes = await Quiz.find({ teacherId: teacherIdParam })
+      .sort({ createdAt: -1 })
+      .select('title timeLimit createdAt questions');
+    
+    console.log(`Found ${quizzes.length} quizzes for teacher ${teacherIdParam}`);
+    
+    // Check which quizzes are already submitted by this student
+    const submissions = await Submission.find({ 
+      studentId: req.user.id,
+      quizId: { $in: quizzes.map(q => q._id) }
+    }).select('quizId');
+    
+    const submittedQuizIds = new Set(submissions.map(s => s.quizId.toString()));
+    
+    const quizzesWithStatus = quizzes.map(quiz => ({
+      ...quiz.toObject(),
+      submitted: submittedQuizIds.has(quiz._id.toString()),
+      teacherName: teacher ? `${teacher.firstName} ${teacher.lastName}` : 'Unknown Teacher',
+      subject: teacher?.subject || 'Unknown Subject'
+    }));
+    
+    console.log('Sending response with quizzes:', quizzesWithStatus.length);
+    
+    res.status(200).json({ 
+      success: true, 
+      quizzes: quizzesWithStatus,
+      teacherId: teacherIdParam,
+      teacherName: teacher ? `${teacher.firstName} ${teacher.lastName}` : null,
+      subject: teacher?.subject
+    });
+  } catch (error) {
+    console.error('Error fetching teacher quizzes:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch quizzes: ' + error.message });
+  }
+});
+
+// LIST QUIZZES FOR STUDENT (all assigned teachers)
 router.get('/list', authenticateToken, async (req, res) => {
   try {
     console.log('Fetching quiz list for student:', req.user.id);
@@ -114,8 +277,7 @@ router.get('/list', authenticateToken, async (req, res) => {
     console.log('Student found:', {
       id: student._id,
       name: `${student.firstName} ${student.lastName}`,
-      teacherCount: student.teachers?.length || 0,
-      isApproved: student.isApproved
+      teacherCount: student.teachers?.length || 0
     });
 
     if (!student.teachers || student.teachers.length === 0) {
@@ -131,8 +293,9 @@ router.get('/list', authenticateToken, async (req, res) => {
     console.log('Teacher IDs:', teacherIds.map(id => id.toString()));
 
     const quizzes = await Quiz.find({ teacherId: { $in: teacherIds } })
+      .populate('teacherId', 'firstName lastName subject')
       .sort({ createdAt: -1 })
-      .select('title timeLimit createdAt questions');
+      .select('title timeLimit createdAt questions teacherId');
 
     console.log(`Found ${quizzes.length} quizzes for student`);
 
@@ -147,6 +310,8 @@ router.get('/list', authenticateToken, async (req, res) => {
     const quizzesWithStatus = quizzes.map(quiz => ({
       ...quiz.toObject(),
       submitted: submittedQuizIds.has(quiz._id.toString()),
+      teacherName: quiz.teacherId ? `${quiz.teacherId.firstName} ${quiz.teacherId.lastName}` : 'Unknown Teacher',
+      subject: quiz.teacherId?.subject || 'Unknown Subject'
     }));
 
     res.status(200).json({ 
@@ -164,7 +329,7 @@ router.get('/list', authenticateToken, async (req, res) => {
   }
 });
 
-// TEACHER'S QUIZZES
+// TEACHER'S QUIZZES (for teacher dashboard)
 router.get('/my-quizzes', authenticateToken, async (req, res) => {
   try {
     const quizzes = await Quiz.find({ teacherId: req.user.id })
@@ -356,7 +521,7 @@ router.post('/submit/:quizId', authenticateToken, async (req, res) => {
         message: `✅ Quiz "${quiz.title}" submitted successfully! Score: ${score}/${quiz.questions.length}`,
         read: false,
         createdAt: new Date(),
-        type: 'quiz',
+        type: 'quiz_result',
         link: `/quiz-result/${quiz._id}`
       });
       await student.save();
@@ -434,6 +599,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     res.status(500).json({ message: 'Failed to delete quiz' });
   }
 });
+
 // GET QUIZ RESULT (Student)
 router.get('/result/:quizId', authenticateToken, async (req, res) => {
   try {
@@ -458,7 +624,8 @@ router.get('/result/:quizId', authenticateToken, async (req, res) => {
     res.status(500).json({ message: 'Error fetching result' });
   }
 });
-// GET SINGLE QUIZ
+
+// GET SINGLE QUIZ (THIS MUST BE LAST - catches /:id)
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
     console.log('Fetching single quiz with ID:', req.params.id);
