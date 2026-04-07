@@ -1,0 +1,271 @@
+/* src/components/Student/StudentDashboard.css */
+.student-dashboard {
+  min-height: 100vh;
+  background: #f8fafc;
+  padding: 2rem;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  font-size: 1.2rem;
+  color: #6c63ff;
+}
+
+/* HEADER */
+.dashboard-header {
+  background: linear-gradient(90deg, #6c63ff, #7f75ff);
+  color: white;
+  padding: 1.6rem 2rem;
+  border-radius: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.dashboard-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.back-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s;
+}
+
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateX(-2px);
+}
+
+.header-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.class-badge {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+}
+
+.logout-btn {
+  background: white;
+  color: #6c63ff;
+  border: none;
+  padding: 0.6rem 1.4rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.logout-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* SECTION TITLE */
+.section-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #6c63ff;
+  padding-left: 1rem;
+}
+
+/* SUBJECTS GRID */
+.subjects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.subject-card {
+  background: white;
+  border-radius: 20px;
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.subject-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 30px rgba(108, 99, 255, 0.15);
+  border-color: #6c63ff;
+}
+
+/* Removed subject-icon styles */
+
+.subject-card h3 {
+  font-size: 1.3rem;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+}
+
+.teacher-name {
+  color: #64748b;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.select-subject-btn {
+  background: linear-gradient(135deg, #6c63ff, #7f75ff);
+  color: white;
+  border: none;
+  padding: 0.7rem 1.5rem;
+  border-radius: 30px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  width: 100%;
+}
+
+.select-subject-btn:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(108, 99, 255, 0.4);
+}
+
+/* Teacher Info Card */
+.teacher-info-card {
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  border-radius: 20px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  border-left: 4px solid #6c63ff;
+  flex-wrap: wrap;
+}
+
+.teacher-avatar {
+  width: 65px;
+  height: 65px;
+  background: linear-gradient(135deg, #6c63ff, #7f75ff);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: white;
+}
+
+.teacher-details h3 {
+  margin: 0 0 0.25rem 0;
+  color: #1e293b;
+  font-size: 1.1rem;
+}
+
+.teacher-details p {
+  margin: 0;
+  color: #6c63ff;
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+.teacher-email {
+  font-size: 0.75rem;
+  color: #64748b;
+  display: block;
+  margin-top: 0.25rem;
+}
+
+/* ACTIONS GRID */
+.actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.action-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.action-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 20px rgba(108, 99, 255, 0.15);
+  border-color: #6c63ff;
+}
+
+.action-card svg {
+  color: #6c63ff;
+  margin-bottom: 0.75rem;
+}
+
+.action-card p {
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.action-card small {
+  color: #64748b;
+  font-size: 0.7rem;
+  display: block;
+  margin-top: 0.25rem;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .student-dashboard {
+    padding: 1rem;
+  }
+  
+  .dashboard-header {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .header-left {
+    justify-content: center;
+  }
+  
+  .subjects-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .actions-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .teacher-info-card {
+    flex-direction: column;
+    text-align: center;
+  }
+}
