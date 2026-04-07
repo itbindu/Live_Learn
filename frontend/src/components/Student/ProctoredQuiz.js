@@ -8,40 +8,6 @@ const ProctoredQuiz = () => {
   const { quizId } = useParams();
   const navigate = useNavigate();
   
-  // Sample quiz data
-  const sampleQuiz = {
-    _id: 'sample123',
-    title: 'Mathematics Proctored Quiz',
-    timeLimit: 10,
-    questions: [
-      {
-        type: 'mcq',
-        question: 'What is 2 + 2?',
-        options: ['1', '2', '3', '4']
-      },
-      {
-        type: 'mcq',
-        question: 'What is 5 × 6?',
-        options: ['30', '25', '35', '40']
-      },
-      {
-        type: 'mcq',
-        question: 'What is the square root of 16?',
-        options: ['2', '3', '4', '5']
-      },
-      {
-        type: 'mcq',
-        question: 'What is 10 - 7?',
-        options: ['2', '3', '4', '5']
-      },
-      {
-        type: 'mcq',
-        question: 'What is 9 ÷ 3?',
-        options: ['2', '3', '4', '5']
-      }
-    ]
-  };
-  
   const [quiz, setQuiz] = useState(null);
   const [answers, setAnswers] = useState([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -63,24 +29,51 @@ const ProctoredQuiz = () => {
   const popupTimeoutRef = useRef(null);
   const isComponentMountedRef = useRef(true);
   const hasAutoSubmittedRef = useRef(false);
-  const warningCountRef = useRef(0); // NEW: Use ref to track warning count synchronously
+  const warningCountRef = useRef(0);
 
+  // ✅ FIX: Fetch actual quiz data from API
   useEffect(() => {
-    isComponentMountedRef.current = true;
-    // Load sample quiz
-    setQuiz(sampleQuiz);
-    setTimeLeft(sampleQuiz.timeLimit * 60);
-    setAnswers(new Array(sampleQuiz.questions.length).fill(''));
-    setLoading(false);
+    const fetchQuiz = async () => {
+      try {
+        setLoading(true);
+        console.log('Fetching quiz data for ID:', quizId);
+        
+        const token = localStorage.getItem('token');
+        if (!token) {
+          navigate('/student/login');
+          return;
+        }
+        
+        const response = await api.get(`/api/quizzes/${quizId}`);
+        console.log('Quiz data response:', response.data);
+        
+        const quizData = response.data.quiz || response.data;
+        
+        if (!quizData || !quizData.questions) {
+          throw new Error('Invalid quiz data received');
+        }
+        
+        setQuiz(quizData);
+        setTimeLeft(quizData.timeLimit * 60);
+        setAnswers(new Array(quizData.questions.length).fill(''));
+        setLoading(false);
+        
+      } catch (err) {
+        console.error('Error fetching quiz:', err);
+        setError(err.response?.data?.message || 'Failed to load quiz');
+        setLoading(false);
+      }
+    };
+    
+    fetchQuiz();
     
     return () => {
       isComponentMountedRef.current = false;
       if (timerRef.current) clearInterval(timerRef.current);
       if (popupTimeoutRef.current) clearTimeout(popupTimeoutRef.current);
-      // Cleanup proctoring listeners
       if (window.proctoringCleanup) window.proctoringCleanup();
     };
-  }, []);
+  }, [quizId, navigate]);
 
   // Timer effect
   useEffect(() => {
@@ -104,11 +97,11 @@ const ProctoredQuiz = () => {
 
   // Setup proctoring IMMEDIATELY when quiz starts
   useEffect(() => {
-    if (quizStarted && !submissionResult) {
+    if (quizStarted && !submissionResult && quiz) {
       console.log("✅ QUIZ STARTED - Setting up proctoring NOW");
       setupProctoring();
     }
-  }, [quizStarted, submissionResult]);
+  }, [quizStarted, submissionResult, quiz]);
 
   const setupProctoring = () => {
     console.log("🔒 Setting up proctoring event listeners...");
@@ -147,7 +140,6 @@ const ProctoredQuiz = () => {
     
     // 5. DETECT Keyboard Shortcuts
     const handleKeyDown = (e) => {
-      // Block Ctrl+C, Ctrl+V, Ctrl+X, Ctrl+A, Ctrl+P, Ctrl+S
       if (e.ctrlKey || e.metaKey) {
         const key = e.key.toLowerCase();
         if (['c', 'v', 'x', 'a', 'p', 's', 'u'].includes(key)) {
@@ -167,24 +159,20 @@ const ProctoredQuiz = () => {
         }
       }
       
-      // Block F12 (DevTools)
       if (e.key === 'F12') {
         e.preventDefault();
         addWarning("Developer tools (F12) is not allowed!");
       }
       
-      // Block Print Screen
       if (e.key === 'PrintScreen') {
         e.preventDefault();
         addWarning("Screenshot attempt is not allowed!");
       }
       
-      // Detect Alt+Tab
       if (e.altKey && e.key === 'Tab') {
         addWarning("Window switching (Alt+Tab) detected!");
       }
       
-      // Block Alt+F4
       if (e.altKey && e.key === 'F4') {
         e.preventDefault();
         addWarning("Alt+F4 is blocked during quiz!");
@@ -192,7 +180,7 @@ const ProctoredQuiz = () => {
     };
     document.addEventListener('keydown', handleKeyDown);
     
-    // 6. DETECT Tab switching / Window blur
+    // 6. DETECT Tab switching
     const handleVisibilityChange = () => {
       if (document.hidden && quizStarted && !submissionResult && !hasAutoSubmittedRef.current) {
         addWarning("Tab switching detected!");
@@ -200,11 +188,10 @@ const ProctoredQuiz = () => {
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
-    // 7. DETECT Window blur (losing focus)
+    // 7. DETECT Window blur
     let blurTimeout = null;
     const handleBlur = () => {
       if (quizStarted && !submissionResult && !hasAutoSubmittedRef.current) {
-        // Add small delay to prevent multiple rapid warnings
         if (blurTimeout) clearTimeout(blurTimeout);
         blurTimeout = setTimeout(() => {
           addWarning("Quiz window lost focus!");
@@ -213,7 +200,7 @@ const ProctoredQuiz = () => {
     };
     window.addEventListener('blur', handleBlur);
     
-    // 8. Block page refresh and close
+    // 8. Block page refresh
     const handleBeforeUnload = (e) => {
       if (quizStarted && !submissionResult && !hasAutoSubmittedRef.current) {
         e.preventDefault();
@@ -224,7 +211,7 @@ const ProctoredQuiz = () => {
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     
-    // Store all listeners for cleanup
+    // Store cleanup
     const cleanup = () => {
       document.removeEventListener('contextmenu', handleContextMenu);
       document.removeEventListener('copy', handleCopy);
@@ -237,74 +224,65 @@ const ProctoredQuiz = () => {
       if (blurTimeout) clearTimeout(blurTimeout);
     };
     
-    // Store cleanup function
     window.proctoringCleanup = cleanup;
-    
     console.log("✅ All proctoring listeners active!");
   };
 
-  // COMPLETELY FIXED: addWarning function with proper counting and auto-submit
   const addWarning = (message) => {
-    // Prevent warnings after quiz is submitted or auto-submit triggered
     if (submissionResult || hasAutoSubmittedRef.current) {
       console.log("⚠️ Warning blocked - Quiz already submitted");
       return;
     }
     
-    // Increment warning count using ref for synchronous tracking
     warningCountRef.current += 1;
     const newWarningCount = warningCountRef.current;
     
     console.log(`⚠️ WARNING #${newWarningCount}: ${message}`);
     
-    // Update warnings array with timestamp
     const newWarning = {
       message,
       timestamp: new Date().toLocaleTimeString()
     };
     
-    setWarnings(prevWarnings => {
-      console.log("Adding warning to array, new length:", prevWarnings.length + 1);
-      return [...prevWarnings, newWarning];
-    });
-    
-    // Update warning count state for display
+    setWarnings(prevWarnings => [...prevWarnings, newWarning]);
     setWarningCount(newWarningCount);
     
-    // Show popup for each warning
     setWarningMessage(message);
     setShowWarningPopup(true);
     
-    // Clear previous timeout
     if (popupTimeoutRef.current) {
       clearTimeout(popupTimeoutRef.current);
     }
     
-    // Auto-hide popup after 3 seconds
     popupTimeoutRef.current = setTimeout(() => {
       if (isComponentMountedRef.current) {
         setShowWarningPopup(false);
       }
     }, 3000);
     
-    // CRITICAL: Check for auto-submit using the synchronous ref value
     if (newWarningCount >= 3 && !isSubmitting && !submissionResult && !hasAutoSubmittedRef.current) {
       console.log("🚨 3 WARNINGS REACHED! Auto-submitting immediately...");
       
-      // Clear popup timeout to prevent it from showing after submit
       if (popupTimeoutRef.current) {
         clearTimeout(popupTimeoutRef.current);
         setShowWarningPopup(false);
       }
       
-      // Call auto-submit immediately
       handleAutoSubmit("3 warnings reached!");
     }
   };
 
-  // FIXED: handleAutoSubmit with proper submission logic
+  // ✅ FIX: Calculate correct answers based on actual quiz data
+  const getCorrectAnswerForQuestion = (question, index) => {
+    // For MCQ questions, the correctAnswer should be stored in the database
+    // Make sure your quiz creation saves the correctAnswer field
+    if (quiz && quiz.questions && quiz.questions[index]) {
+      return quiz.questions[index].correctAnswer;
+    }
+    return '';
+  };
+
   const handleAutoSubmit = useCallback((reason) => {
-    // Prevent multiple auto-submissions
     if (hasAutoSubmittedRef.current || submissionResult || isSubmitting) {
       console.log("Auto-submit already triggered or quiz already submitted");
       return;
@@ -314,19 +292,16 @@ const ProctoredQuiz = () => {
     hasAutoSubmittedRef.current = true;
     setAutoSubmitTriggered(true);
     
-    // Clear timer first
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
     
-    // Close warning popup if open
     if (popupTimeoutRef.current) {
       clearTimeout(popupTimeoutRef.current);
       setShowWarningPopup(false);
     }
     
-    // Calculate score immediately using current answers
     let correct = 0;
     const currentAnswers = answers;
     const questions = quiz.questions;
@@ -336,7 +311,7 @@ const ProctoredQuiz = () => {
       const userAnswer = currentAnswers[idx];
       const correctAnswer = getCorrectAnswerForQuestion(q, idx);
       console.log(`Q${idx + 1}: User: ${userAnswer}, Correct: ${correctAnswer}`);
-      if (userAnswer === correctAnswer) {
+      if (userAnswer && userAnswer === correctAnswer) {
         correct++;
       }
     });
@@ -344,7 +319,6 @@ const ProctoredQuiz = () => {
     const percentage = (correct / questions.length) * 100;
     console.log(`Final score: ${correct}/${questions.length} (${percentage}%)`);
     
-    // Set submission result
     setSubmissionResult({
       score: correct,
       percentage: Math.round(percentage),
@@ -354,26 +328,13 @@ const ProctoredQuiz = () => {
       reason: reason
     });
     
-    // Cleanup proctoring listeners
     if (window.proctoringCleanup) {
       window.proctoringCleanup();
       window.proctoringCleanup = null;
     }
     
     setIsSubmitting(false);
-  }, [answers, quiz]);
-
-  const getCorrectAnswerForQuestion = (question, index) => {
-    // For sample quiz, define correct answers
-    if (index === 0) return 'D'; // 2+2=4
-    if (index === 1) return 'A'; // 5×6=30
-    if (index === 2) return 'C'; // √16=4
-    if (index === 3) return 'B'; // 10-7=3
-    if (index === 4) return 'B'; // 9÷3=3
-    
-    const optionLetters = ['A', 'B', 'C', 'D'];
-    return optionLetters[question.options.indexOf('')];
-  };
+  }, [answers, quiz, submissionResult, isSubmitting]);
 
   const startQuiz = async () => {
     if (isStartingQuiz || quizStarted) return;
@@ -382,10 +343,11 @@ const ProctoredQuiz = () => {
     setStartError('');
     
     try {
+      // Optional: Call API to mark quiz as started
+      // await api.post(`/api/quizzes/${quizId}/start`);
       setQuizStarted(true);
-      // Reset warning ref when starting quiz
       warningCountRef.current = 0;
-      console.log("✅ Quiz started successfully! Warning counter reset.");
+      console.log("✅ Quiz started successfully!");
     } catch (err) {
       console.error("Error starting quiz:", err);
       setStartError("Failed to start quiz. Please try again.");
@@ -420,20 +382,43 @@ const ProctoredQuiz = () => {
     questions.forEach((q, idx) => {
       const userAnswer = answers[idx];
       const correctAnswer = getCorrectAnswerForQuestion(q, idx);
-      if (userAnswer === correctAnswer) {
+      if (userAnswer && userAnswer === correctAnswer) {
         correct++;
       }
     });
     
     const percentage = (correct / questions.length) * 100;
     
-    setSubmissionResult({
-      score: correct,
-      percentage: Math.round(percentage),
-      correctAnswers: correct,
-      totalQuestions: questions.length,
-      autoSubmitted: false
-    });
+    // ✅ Send submission to backend
+    try {
+      const response = await api.post(`/api/quizzes/submit/${quizId}`, {
+        answers: answers,
+        proctoringData: {
+          warnings: warnings,
+          autoSubmitted: false
+        }
+      });
+      
+      console.log('Submission saved:', response.data);
+      
+      setSubmissionResult({
+        score: response.data.score || correct,
+        percentage: response.data.percentage || Math.round(percentage),
+        correctAnswers: correct,
+        totalQuestions: questions.length,
+        autoSubmitted: false
+      });
+    } catch (err) {
+      console.error('Failed to save submission:', err);
+      // Still show result even if API fails
+      setSubmissionResult({
+        score: correct,
+        percentage: Math.round(percentage),
+        correctAnswers: correct,
+        totalQuestions: questions.length,
+        autoSubmitted: false
+      });
+    }
     
     // Cleanup proctoring listeners
     if (window.proctoringCleanup) {
@@ -441,7 +426,6 @@ const ProctoredQuiz = () => {
       window.proctoringCleanup = null;
     }
     
-    // Clear timer
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -478,11 +462,47 @@ const ProctoredQuiz = () => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="proctored-quiz-container error-screen">
+        <div className="error-content">
+          <h2>Error Loading Quiz</h2>
+          <p>{error}</p>
+          <button onClick={() => navigate('/student/quizzes')} className="back-btn">
+            Back to Quizzes
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!quiz) {
+    return null;
+  }
+
   if (!quizStarted) {
     return (
       <div className="proctored-quiz-container start-screen">
         <div className="start-screen-content">
-          <h1>📝 {quiz?.title}</h1>
+          <h1>📝 {quiz.title}</h1>
+          
+          <div className="quiz-info">
+            <div className="info-card">
+              <span className="info-icon">⏱️</span>
+              <span className="info-label">Time Limit</span>
+              <span className="info-value">{quiz.timeLimit} minutes</span>
+            </div>
+            <div className="info-card">
+              <span className="info-icon">📋</span>
+              <span className="info-label">Questions</span>
+              <span className="info-value">{quiz.questions.length}</span>
+            </div>
+            <div className="info-card">
+              <span className="info-icon">🎥</span>
+              <span className="info-label">Proctoring</span>
+              <span className="info-value">Enabled</span>
+            </div>
+          </div>
           
           <div className="proctoring-requirements">
             <h3>⚠️ Proctoring Requirements</h3>
@@ -591,23 +611,33 @@ const ProctoredQuiz = () => {
 
           <div className="answer-panel">
             <h3>Your Answer</h3>
-            {currentQ.options.map((opt, idx) => {
-              const optionLetter = String.fromCharCode(65 + idx);
-              return (
-                <label key={idx} className="option-label">
-                  <input
-                    type="radio"
-                    name="question"
-                    checked={answers[currentQuestion] === optionLetter}
-                    onChange={() => handleAnswerChange(optionLetter)}
-                    disabled={!!submissionResult}
-                  />
-                  <span>
-                    <strong>{optionLetter}.</strong> {opt}
-                  </span>
-                </label>
-              );
-            })}
+            {currentQ.type === 'mcq' ? (
+              currentQ.options.map((opt, idx) => {
+                const optionLetter = String.fromCharCode(65 + idx);
+                return (
+                  <label key={idx} className="option-label">
+                    <input
+                      type="radio"
+                      name="question"
+                      checked={answers[currentQuestion] === optionLetter}
+                      onChange={() => handleAnswerChange(optionLetter)}
+                      disabled={!!submissionResult}
+                    />
+                    <span>
+                      <strong>{optionLetter}.</strong> {opt}
+                    </span>
+                  </label>
+                );
+              })
+            ) : (
+              <input
+                type="text"
+                className="blank-input"
+                value={answers[currentQuestion] || ''}
+                onChange={(e) => handleAnswerChange(e.target.value)}
+                placeholder="Type your answer here..."
+              />
+            )}
           </div>
         </div>
 
