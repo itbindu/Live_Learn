@@ -7,7 +7,7 @@ const router = express.Router();
 // Add at the top of forgotPassword.js
 const getFrontendUrl = () => {
   return process.env.NODE_ENV === 'production' 
-    ? 'https://live-learing.onrender.com' 
+    ? 'https://livelearn-eight.vercel.app' 
     : 'http://localhost:3000';
 };
 router.post('/forgot-password', async (req, res) => {

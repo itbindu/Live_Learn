@@ -16,7 +16,7 @@ const server = http.createServer(app);
 // ================== FRONTEND URL HELPER ==================
 const getFrontendUrl = () => {
   if (process.env.NODE_ENV === 'production') {
-    return process.env.FRONTEND_URL || 'https://live-learn-gray.vercel.app';
+    return process.env.FRONTEND_URL || 'https://livelearn-eight.vercel.app';
   }
   return process.env.FRONTEND_URL || 'http://localhost:3000';
 };
