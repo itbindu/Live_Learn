@@ -1,4 +1,3 @@
-
 # Virtual Classroom with Real-Time Quizzes
 
 ## 📖 Overview
@@ -21,6 +20,7 @@ The Virtual Classroom with Real-Time Quizzes is a web-based platform designed to
 ## 🚀 How to Run
 
 ### 1️⃣ Install Requirements
+
 - Node.js
 - MongoDB
 - npm
@@ -29,23 +29,29 @@ Check installation:
 ```bash
 node -v
 npm -v
+```bash
+Clone the Repository
+bash
+git clone https://github.com/itbindu/Live_Learn.git
+cd Live_Learn
 
-2️⃣ Clone the Repository
-git clone https://github.com/your-username/your-repo-name.git
-cd your-repo-name
-3️⃣ Install Dependencies
+Install Dependencies
 Frontend:
-cd client
+
+bash
+cd frontend
 npm install
 npm start
 Backend:
-cd server
+
+bash
+cd backend
 npm install
 npm start
 4️⃣ Run the Application
-
 Open your browser and go to:
 
+Code
 http://localhost:3000
 🔐 Security
 OTP-based authentication system
@@ -54,26 +60,21 @@ Password hashing using bcrypt
 Role-based access control (Teacher / Student)
 AI-based proctoring system to prevent cheating
 🧰 Technology Stack
-
 Frontend:
 
 React.js
 CSS3
-
 Backend:
 
 Node.js
 Express.js
-
 Database:
 
 MongoDB
-
 Real-Time Communication:
 
 Socket.IO
 WebRTC
-
 Other Tools:
 
 Face-api.js (AI proctoring)
@@ -86,7 +87,6 @@ Nodemailer (email service)
 ☁️ Cloud deployment (AWS / Azure)
 🎨 Improved UI/UX design
 🤝 Contributing
-
 Contributions are welcome!
 
 Fork the repository
@@ -95,10 +95,8 @@ Commit your changes
 Push to your branch
 Open a Pull Request
 📜 License
-
 This project is licensed under the MIT License.
 
 📬 Contact
-
 Developer: G. Harshitha
 📧 Email: your-email@example.com
