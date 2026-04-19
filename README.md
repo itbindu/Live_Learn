@@ -1,29 +1,35 @@
-Virtual Classroom with Real-Time Quizzes
-📖 Overview
 
-The Virtual Classroom with Real-Time Quizzes is a web-based platform designed to enhance online learning by integrating live interaction and assessment tools. It enables teachers and students to connect through real-time video sessions, quizzes, and collaborative features. The system improves engagement, participation, and classroom monitoring in digital learning environments.
+# Virtual Classroom with Real-Time Quizzes
 
-⚙️ Features
-✅ Live virtual classroom with real-time interaction
-📝 Real-time quizzes with instant feedback
-👩‍🏫 Teacher dashboard for monitoring student performance
-👨‍🎓 Student dashboard for accessing classes and materials
-📊 Leaderboard to track student progress
-📂 Learning Management System (LMS) for content sharing
-📅 Automated attendance tracking
-🔐 OTP-based authentication and secure login
-🎥 Video conferencing using WebRTC
-🧠 AI-based proctoring (face detection & anti-cheating system)
-🚀 How to Run
-1️⃣ Install Requirements
-Node.js
-MongoDB
-npm
+## 📖 Overview
+
+The Virtual Classroom with Real-Time Quizzes is a web-based platform designed to enhance online learning by integrating live interaction and assessment tools. It enables teachers and students to collaborate in real-time with interactive quizzes and instant feedback.
+
+## ⚙️ Features
+
+- ✅ Live virtual classroom with real-time interaction
+- 📝 Real-time quizzes with instant feedback
+- 👩‍🏫 Teacher dashboard for monitoring student performance
+- 👨‍🎓 Student dashboard for accessing classes and materials
+- 📊 Leaderboard to track student progress
+- 📂 Learning Management System (LMS) for content sharing
+- 📅 Automated attendance tracking
+- 🔐 OTP-based authentication and secure login
+- 🎥 Video conferencing using WebRTC
+- 🧠 AI-based proctoring (face detection & anti-cheating system)
+
+## 🚀 How to Run
+
+### 1️⃣ Install Requirements
+- Node.js
+- MongoDB
+- npm
 
 Check installation:
-
+```bash
 node -v
 npm -v
+
 2️⃣ Clone the Repository
 git clone https://github.com/your-username/your-repo-name.git
 cd your-repo-name
