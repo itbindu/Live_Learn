@@ -1,0 +1,98 @@
+Virtual Classroom with Real-Time Quizzes
+📖 Overview
+
+The Virtual Classroom with Real-Time Quizzes is a web-based platform designed to enhance online learning by integrating live interaction and assessment tools. It enables teachers and students to connect through real-time video sessions, quizzes, and collaborative features. The system improves engagement, participation, and classroom monitoring in digital learning environments.
+
+⚙️ Features
+✅ Live virtual classroom with real-time interaction
+📝 Real-time quizzes with instant feedback
+👩‍🏫 Teacher dashboard for monitoring student performance
+👨‍🎓 Student dashboard for accessing classes and materials
+📊 Leaderboard to track student progress
+📂 Learning Management System (LMS) for content sharing
+📅 Automated attendance tracking
+🔐 OTP-based authentication and secure login
+🎥 Video conferencing using WebRTC
+🧠 AI-based proctoring (face detection & anti-cheating system)
+🚀 How to Run
+1️⃣ Install Requirements
+Node.js
+MongoDB
+npm
+
+Check installation:
+
+node -v
+npm -v
+2️⃣ Clone the Repository
+git clone https://github.com/your-username/your-repo-name.git
+cd your-repo-name
+3️⃣ Install Dependencies
+Frontend:
+cd client
+npm install
+npm start
+Backend:
+cd server
+npm install
+npm start
+4️⃣ Run the Application
+
+Open your browser and go to:
+
+http://localhost:3000
+🔐 Security
+OTP-based authentication system
+JWT-based secure login
+Password hashing using bcrypt
+Role-based access control (Teacher / Student)
+AI-based proctoring system to prevent cheating
+🧰 Technology Stack
+
+Frontend:
+
+React.js
+CSS3
+
+Backend:
+
+Node.js
+Express.js
+
+Database:
+
+MongoDB
+
+Real-Time Communication:
+
+Socket.IO
+WebRTC
+
+Other Tools:
+
+Face-api.js (AI proctoring)
+Cloudinary (file storage)
+Nodemailer (email service)
+🛠 Future Improvements
+📱 Mobile application support
+🤖 AI-based personalized learning recommendations
+📊 Advanced analytics dashboard
+☁️ Cloud deployment (AWS / Azure)
+🎨 Improved UI/UX design
+🤝 Contributing
+
+Contributions are welcome!
+
+Fork the repository
+Create a new branch (feature/your-feature-name)
+Commit your changes
+Push to your branch
+Open a Pull Request
+📜 License
+
+This project is licensed under the MIT License.
+
+📬 Contact
+
+Developer: G. Harshitha
+📧 Email: your-email@example.com
