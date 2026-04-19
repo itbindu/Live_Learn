@@ -29,30 +29,34 @@ Check installation:
 ```bash
 node -v
 npm -v
-```bash
+```
 Clone the Repository
-bash
+ ```bash
 git clone https://github.com/itbindu/Live_Learn.git
 cd Live_Learn
-
+ ```
 Install Dependencies
 Frontend:
 
-bash
+ ```bash
 cd frontend
 npm install
 npm start
+ ```
 Backend:
 
-bash
+ ```bash
 cd backend
 npm install
 npm start
+ ```
 4️⃣ Run the Application
 Open your browser and go to:
 
 Code
+ ```
 http://localhost:3000
+ ```
 🔐 Security
 OTP-based authentication system
 JWT-based secure login
@@ -99,4 +103,4 @@ This project is licensed under the MIT License.
 
 📬 Contact
 Developer: G. Bindu
-📧 Email: your-email@example.com
+📧 Email: 22wh1a1273@bvrithyderabad.edu.in
